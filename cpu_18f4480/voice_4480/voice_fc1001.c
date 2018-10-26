@@ -638,17 +638,41 @@ unsigned char  GetVoice_BeepByBuz(unsigned char xTmpCurVoice) {
 
 
 
-unsigned char    GetVoice_State(UCHAR xTmpCurVoice, UCHAR xCurVoice) {
+unsigned char    GetVoice_State(UCHAR xTmpCurVoice, UCHAR nowMent) {
     static unsigned char EmergencyVoiceCnt = 0;
 
     if (xTmpCurVoice != NO_MENT)
         return xTmpCurVoice;
 
+	// 화재
+	if (!ELE_bIN_FIR) {
+		bHajaeMentEn = TRUE;
+	}
+
+	if (ELE_bIN_FR1 || ELE_bIN_FR2) {
+		if (ELE_bIN_AT)
+			bHajaeMentEn = FALSE;
+	} else {
+		bHajaeMentEn = TRUE;
+	}
+
+	if (ELE_bIN_FIR && (nowMent != HWAJAE_MENT) && bHajaeMentEn) {
+		EmergencyVoiceCnt = 0;
+		xTmpCurVoice = HWAJAE_MENT;
+		return xTmpCurVoice;
+	}
+
+	if (ELE_bIN_FIR && bHajaeMentEn) {
+		return NO_MENT;
+	}
+
+
+
     // 파킹
-    if (ELE_bPARKING_READY  && (xCurVoice != PARKING_MENT)) {
+    if (ELE_bPARKING_READY  && (nowMent != PARKING_MENT)) {
         xTmpCurVoice = PARKING_MENT;
     }
-    if (ELE_bPARKING  && (xCurVoice == PARKING_MENT)) {
+    if (ELE_bPARKING  && (nowMent == PARKING_MENT)) {
         if (bVoicePlaying) {
             SPI_Stop_Play();
             bVoicePlaying = FALSE;
@@ -656,26 +680,14 @@ unsigned char    GetVoice_State(UCHAR xTmpCurVoice, UCHAR xCurVoice) {
     }
 
     // 오버로드
-    if ((ELE_bOPEN || ELE_bOPEN_SUB) && ELE_bOVERLOAD && (xCurVoice != OVERLOAD_MENT)) {
+    if ((ELE_bOPEN || ELE_bOPEN_SUB) && ELE_bOVERLOAD && (nowMent != OVERLOAD_MENT)) {
         xTmpCurVoice = OVERLOAD_MENT;
     }
 
-    // 화재
-    if (!ELE_bFIRE) {
-        bHajaeMentEn = TRUE;
-    }
-
-    if (ELE_bIN_FR1) {
-        bHajaeMentEn = FALSE;
-    }
-
-    if (ELE_bFIRE && (xCurVoice != HWAJAE_MENT) && bHajaeMentEn) {
-        xTmpCurVoice = HWAJAE_MENT;
-    }
 
     // 비상
     // [151006] 자동시에만 EMG MENT 출력 되도록 수정
-    if (ELE_bEMG  && (xCurVoice != EMERGENCY_MENT) && ELE_bIN_AT) {
+    if (ELE_bEMG  && (nowMent != EMERGENCY_MENT) && ELE_bIN_AT) {
         if (EmergencyVoiceCnt < 10)	EmergencyVoiceCnt++;
         if (EmergencyVoiceCnt < 6)
             xTmpCurVoice = EMERGENCY_MENT;
@@ -684,11 +696,12 @@ unsigned char    GetVoice_State(UCHAR xTmpCurVoice, UCHAR xCurVoice) {
         EmergencyVoiceCnt = 0;
 
     // 밧데리
-    if (ELE_bBAT  && (xCurVoice != POWER_DOWN_MENT)) {
+    if (ELE_bBAT  && (nowMent != POWER_DOWN_MENT)) {
         xTmpCurVoice = POWER_DOWN_MENT;
     }
 
-    return xTmpCurVoice;
+
+	return xTmpCurVoice;
 
 }
 
